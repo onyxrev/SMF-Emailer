@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'eventmachine'
-require 'socket'
 require 'yaml'
 require 'mail'
 
