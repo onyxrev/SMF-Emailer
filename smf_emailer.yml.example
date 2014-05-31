@@ -1,0 +1,18 @@
+service_names: 
+  - site/important_daemon
+
+interval: 60
+
+mail:
+  from: from@example.com
+  to: to@example.com
+  subject: SMF services down!
+  delivery_method: smtp
+  settings:
+    address: mail.example.com
+    domain: example.com
+    port: 25
+    user_name: <username>
+    password: <password>
+    enable_starttls_auto: true
+    authentication: plain

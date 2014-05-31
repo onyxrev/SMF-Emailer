@@ -1,0 +1,126 @@
+#!/usr/bin/env ruby
+require 'eventmachine'
+require 'socket'
+require 'yaml'
+require 'mail'
+
+class SMFEmailer
+  DEFAULT_CONFIG = {
+    "interval"            => 300,
+    "service_names"       => [],
+    "unacceptable_states" => ["maintenance", "offline"],
+    "mail"                => {}
+  }
+  
+  def start   
+    puts "#{Time.now.inspect} Checking for #{@options["unacceptable_states"].inspect} statuses for services #{@options["service_names"].inspect} every #{@options["interval"].inspect} seconds"
+
+    EventMachine.run {
+      EventMachine.add_periodic_timer(@options["interval"]) { check_services }
+    }
+  end
+
+  def load_config(config_file)
+    begin
+      config = YAML.load_file(config_file)
+    rescue
+      puts "No config or invalid config specified: #{config_file.inspect}"
+      exit
+    end
+
+    @options = DEFAULT_CONFIG.merge config
+
+    if @options["service_names"].empty?
+      puts "You need to specify some services to monitor"
+      exit
+    end
+
+    configure_mail
+  end
+
+  def configure_mail
+    mail_options = symbolized_mail_options
+
+    return unless mail_options[:delivery_method]
+      
+    Mail.defaults do
+      delivery_method mail_options[:delivery_method], mail_options[:settings]
+    end
+  end
+
+  # mail gem requires symbol keys
+  def symbolized_mail_options
+    symbolize(@options["mail"])
+  end
+
+  def symbolize(hash)
+    hash.reduce({}) do |options, (key, value)|
+      if value.is_a? Hash
+        options[key.to_sym] = symbolize(value)
+      else
+        options[key.to_sym] = value
+      end
+
+      options
+    end
+  end
+  
+  def services_matcher
+    @services_matcher ||= Regexp.new [
+      "^(\\w+).*(",
+      @options["service_names"].map{ |name| Regexp.escape(name) }.join("|"),
+      ")$"
+    ].join("")
+  end
+  
+  def email(message)
+    mail_options = symbolized_mail_options
+    
+    puts "#{Time.now.inspect} Mailing services notification to #{mail_options[:to].inspect}"
+
+    Mail.new do
+      from    mail_options[:from]
+      to      mail_options[:to]
+      subject mail_options[:subject]
+      body    message
+    end.deliver
+  end
+
+  def check_services
+    messages = down_services.map do |service_name, service_status|
+      "#{service_name.inspect} is in status #{service_status.inspect}"
+    end
+
+    return if messages.empty?
+
+    messages.each do |message|
+      puts "#{Time.now.inspect} #{message}"
+    end
+    
+    email messages.join("\n")
+  end
+
+  def down_services
+    services_statuses.select do |service_name, service_status|
+      @options["unacceptable_states"].include? service_status
+    end
+  end
+
+  def services_statuses
+    service_list = `svcs`.split("\n")[1..-1]
+
+    service_list.reduce({}) do |services_statuses_hash, service_output_from_svcs|
+      service_result = service_output_from_svcs.match(services_matcher)
+
+      if service_result
+        services_statuses_hash[service_result[2]] = service_result[1]
+      end
+
+      services_statuses_hash
+    end
+  end
+end
+
+emailer = SMFEmailer.new
+emailer.load_config(ARGV[0])
+emailer.start
