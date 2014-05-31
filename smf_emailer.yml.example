@@ -1,11 +1,14 @@
 service_names: 
-  - site/important_daemon
+  - pkgsrc/rabbitmq:default
+  - pkgsrc/epmd:default
 
 interval: 60
 
 mail:
   from: from@example.com
-  to: to@example.com
+  to:
+    - to@example.com
+    - also@example.com
   subject: SMF services down!
   delivery_method: smtp
   settings:
