@@ -4,6 +4,8 @@ A stupid script that runs 'svcs' for you at some interval and checks to see whet
 
 ## Installation
 
+I put smf_emailer in /opt/local/bin and smf_emailer.yml in /opt/local/etc
+
 ### ruby
 Install ruby your preferred way.  If you don't have a preferred way this works:
 
