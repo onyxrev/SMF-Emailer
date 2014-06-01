@@ -15,17 +15,17 @@ Install ruby your preferred way.  If you don't have a preferred way this works:
 pkgin install ruby200
 ```
 
-### gems
+### mail gem
 You can either run the "gem" command:
 
 ```
-gem install eventmachine mail
+gem install mail
 ```
 
 or if you prefer pkgin:
 
 ```
-pkgin install ruby200-eventmachine ruby200-mail
+pkgin install ruby200-mail
 ```
 
 ### SMF

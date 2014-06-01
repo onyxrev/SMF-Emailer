@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-require 'eventmachine'
 require 'yaml'
 require 'mail'
 
@@ -14,9 +13,10 @@ class SMFEmailer
   def start   
     puts "#{Time.now.inspect} Checking for #{@options["unacceptable_states"].inspect} statuses for services #{@options["service_names"].inspect} every #{@options["interval"].inspect} seconds"
 
-    EventMachine.run {
-      EventMachine.add_periodic_timer(@options["interval"]) { check_services }
-    }
+    loop do
+      sleep @options["interval"]
+      Thread.new { check_services }
+    end
   end
 
   def load_config(config_file)
